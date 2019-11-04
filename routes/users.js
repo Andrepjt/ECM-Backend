@@ -274,7 +274,7 @@ router.post('/absen_ecm', function(req, res) {
                   res.json({status : 'error'});
               } else {
                   console.log('Success');
-                  res.json({status : 'success'});
+                  res.json({status : 'success', category_qr : 'absen_ecm'});
               }
           });
 
@@ -370,29 +370,58 @@ router.post('/transfer_poin', function(req, res) {
 });
 
 
-router.get('/users/:id', function(req, res) {
-  connection.query('SELECT * FROM users WHERE nik = ? ', [req.params.id], function(error, results, fields) {
-    try {
-      if(results.length == 0) {
-        let info = {
-          status : 'error',
-          alert : 'nik not found!'
-        }
-        res.json(info);
-      } else {
-        let user = {
-          id : results[0].id,
-          email : results[0].email,
-          username : results[0].username,
-          nama : results[0].nama,
-          nik : results[0].nik
-        }
-        res.json(user);
-      }
-    } catch (e) {
-      return res.status(404).send('404 Not Found!');
+router.post('/users/:id', function(req, res) {
+  try {
+    let token = req.headers['x-access-token'] || req.headers['authorization']; // Express headers are auto converted to lowercase
+    if (token.startsWith('Bearer ')) {
+      // Remove Bearer from string
+      token = token.slice(7, token.length);
     }
-  })
+
+    if (token) {
+      jwt.verify(token, config.secret, (err, decoded) => {
+        if (err) {
+          return res.status(200).json({
+            success: false,
+            message: 'Token is not valid'
+          });
+        } else {
+          connection.query('SELECT * FROM users WHERE nik = ? ', [req.params.id], function(error, results, fields) {
+            try {
+              if(results.length == 0) {
+                let info = {
+                  status : 'error',
+                  alert : 'nik not found!'
+                }
+                res.json(info);
+              } else {
+                res.json({
+                  id : results[0].id,
+                  email : results[0].email,
+                  username : results[0].username,
+                  nama : results[0].nama,
+                  nik : results[0].nik,
+                  category_qr : 'profile'
+                });
+              }
+            } catch (e) {
+              return res.status(404).send('404 Not Found!');
+            }
+          })
+        }
+      });
+    } else {
+      return res.json({
+        success: false,
+        message: 'Auth token is not supplied'
+      });
+    }
+  } catch(e) {
+    res.status(403).json({
+      success: false,
+      message: 'Auth token is not supplied'
+    });
+  }
 });
 
 
