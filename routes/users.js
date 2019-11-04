@@ -8,26 +8,6 @@ var bcrypt = require('bcryptjs');
 var connection = require('../connection');
 var config = require('../config.js');
 
-
-
-let data = [
-  { id : 1,
-    username : 'arif1234',
-    password : 'password1234',
-    nama : 'Arif',
-    gender : 'Pria',
-    age : 26
-  }, {
-    id : 2,
-    username : 'jack1234',
-    password : 'password1234',
-    nama : 'Jack',
-    gender : 'Pria',
-    age : 26
-  }
-]
-
-
 router.use(express.json());
 router.use(bodyParser.urlencoded({extended : false}));
 
