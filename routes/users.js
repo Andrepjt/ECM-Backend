@@ -8,6 +8,10 @@ var bcrypt = require('bcryptjs');
 var connection = require('../connection');
 var config = require('../config.js');
 
+var multer  = require('multer');
+var path    = require('path');
+var uploads = multer({dest: 'uploads'});
+
 router.use(express.json());
 router.use(bodyParser.urlencoded({extended : false}));
 
@@ -404,8 +408,52 @@ router.post('/users/:id', function(req, res) {
   }
 });
 
+// router.post('/upload_photo', uploads.single('file'), function(req, res, next) {
+//
+//    if (req.file) {
+//      console.log('Profile image uploaded');
+//    }
+// });
 
+router.post('/upload_photo', function(req, res) {
+  var storage = multer.diskStorage({
+    destination: path.join('uploads'),
+    filename: function (req, file, cb) {
+      let data = cb(null, file.fieldname + '_' + Date.now() + path.extname(file.originalname));
+    }
+  });
 
+  var upload = multer({ storage: storage }).single('file');
+
+  upload(req, res, function (err) {
+    let data = JSON.stringify(req.body, null, 2);
+    let user = JSON.parse(data);
+    try {
+      let input = {
+        user_id : user.user_id,
+        path_of_file : req.file.filename
+      }
+      connection.query('INSERT INTO photo_profile SET ?', input, function(error, results, fields) {
+        if(error){
+            console.log(error);
+            res.json({status : 'error'});
+        } else {
+            console.log('Success');
+            res.json({status : 'success'});
+        }
+      });
+    } catch (e) {
+      res.json({status : "error"})
+    }
+    // if (err instanceof multer.MulterError) {
+    //   res.json({status : "error"})
+    // } else if (err) {
+    //   res.json({status : "error"})
+    // } else {
+    //
+    // }
+  })
+});
 
 // router.get('/users/:id', function(req, res) {
 //   let get = data.find(c => c.id === parseInt(req.params.id));
