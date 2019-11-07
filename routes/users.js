@@ -54,34 +54,34 @@ router.post('/register', function(req, res) {
       res.json(info)
     } else {
       connection.query('SELECT * FROM `users` WHERE `username` = ?', [req.body.username], function (error, results, fields) {
-                                  if(results.length > 0) {
-                                    let info = {
-                                          status : 'error',
-                                          alert : 'username has been used!, please trying another username.'
-                                        }
-                                        res.json(info);
-                                  } else if(results.length == 0) {
-                                    var hashedPassword = bcrypt.hashSync(req.body.password, 8);
-                                    let input = {
-                                      email : req.body.email,
-                                      username : req.body.username,
-                                      password : hashedPassword,
-                                      nama : req.body.nama,
-                                      gender : req.body.gender,
-                                      nik : req.body.nik
-                                    }
+        if(results.length > 0) {
+          let info = {
+                status : 'error',
+                alert : 'username has been used!, please trying another username.'
+              }
+              res.json(info);
+        } else if(results.length == 0) {
+          var hashedPassword = bcrypt.hashSync(req.body.password, 8);
+          let input = {
+            email : req.body.email,
+            username : req.body.username,
+            password : hashedPassword,
+            nama : req.body.nama,
+            gender : req.body.gender,
+            nik : req.body.nik
+          }
 
-                                    connection.query('INSERT INTO users SET ?', input, function (error, results, fields) {
-                                        if(error){
-                                            console.log(error);
-                                            res.json({status : 'error'});
-                                        } else {
-                                            console.log('Success');
-                                            res.json({status : 'success'});
-                                        }
-                                    });
-                                  }
-                                });
+          connection.query('INSERT INTO users SET ?', input, function (error, results, fields) {
+              if(error){
+                  console.log(error);
+                  res.json({status : 'error'});
+              } else {
+                  console.log('Success');
+                  res.json({status : 'success'});
+              }
+          });
+        }
+      });
 
     }
   } catch (e) {
@@ -129,7 +129,7 @@ router.post('/login', function(req, res) {
               var token = jwt.sign({ id : results[0].id, username: results[0].username }, config.secret, {
                 expiresIn: 86400
               });
-              res.json({ id : results[0].id, username: results[0].username, nama: results[0].nama,  status : 'success', auth: true, token: token });
+              res.json({ id : results[0].id, nik : results[0].nik, username: results[0].username, nama: results[0].nama,  status : 'success', auth: true, token: token });
             }
           }
         } catch (e) {
@@ -356,6 +356,70 @@ router.post('/transfer_poin', function(req, res) {
 });
 
 
+router.post('/tambah_poin', function (req, res) {
+  try {
+    let token = req.headers['x-access-token'] || req.headers['authorization']; // Express headers are auto converted to lowercase
+    if (token.startsWith('Bearer ')) {
+      // Remove Bearer from string
+      token = token.slice(7, token.length);
+    }
+
+    if (token) {
+      jwt.verify(token, config.secret, (err, decoded) => {
+        if (err) {
+          return res.status(200).json({
+            success: false,
+            message: 'Token is not valid'
+          });
+        } else {
+          connection.query('SELECT * FROM users WHERE nik = ? ', [req.body.user_id], function(error, results, fields) {
+            try {
+              if(results.length == 0) {
+                let info = {
+                  status : 'error',
+                  alert : 'nik not found!'
+                }
+                res.json(info);
+              } else {
+                connection.query('SELECT * FROM `users` left join `poin` on users.id = poin.user_id where users.id = ?', [results[0].id], function (error, results, fields) {
+                  var a = parseInt(req.body.poin_user);
+                  var b = parseInt(results[0].poin_user);
+                  var c = a + b;
+                  connection.query('UPDATE poin SET poin_user = ? WHERE user_id = ?', [ c , results[0].user_id], function (error, results, fields) {
+                      if(error){
+                        console.log(error);
+                        res.json({status : 'error', alert: 'error'});
+                      } else {
+                        console.log('Success');
+                        res.json({status : 'success', alert: 'error'});
+                      }
+                  });
+                });
+
+              }
+            } catch (e) {
+              console.log('Error');
+            }
+          });
+
+        }
+      });
+    } else {
+      return res.json({
+        success: false,
+        message: 'Auth token is not supplied'
+      });
+    }
+
+  } catch (e) {
+    res.status(403).json({
+      success: false,
+      message: 'Auth token is not supplied'
+    });
+  }
+});
+
+
 router.post('/users/:id', function(req, res) {
   try {
     let token = req.headers['x-access-token'] || req.headers['authorization']; // Express headers are auto converted to lowercase
@@ -410,12 +474,6 @@ router.post('/users/:id', function(req, res) {
   }
 });
 
-// router.post('/upload_photo', uploads.single('file'), function(req, res, next) {
-//
-//    if (req.file) {
-//      console.log('Profile image uploaded');
-//    }
-// });
 
 router.post('/upload_photo', function(req, res) {
   var storage = multer.diskStorage({
@@ -487,10 +545,25 @@ router.post('/delete_photo', function(req, res) {
         message : 'photo has been deleted',
         photo : null
       });
-
     });
   });
+});
 
+
+router.post('/add_log_poin', function(req, res) {
+  connection.query('SELECT * FROM poin_scan_qr WHERE nik_scanner = ? AND nik_poin', [req.body.nik_scanner, req.body.nik_poin], function(error, results, fields) {
+    if(results.length == 0) {
+      let input = {
+        nik_scanner : req.body.nik_scanner,
+        nik_poin : req.body.nik_poin
+      }
+      connection.query('INSERT INTO poin_scan_qr SET ?', input, function(error, results, fields) {
+        res.json({ status: "success", message : "berhasil ditambahkan"});
+      });
+    } else {
+      res.json({ status: "error", message : "Poin dari akun ini telah anda dapatkan"});
+    }
+  });
 });
 
 
