@@ -20,8 +20,9 @@ app.use(function(req, res, next) {
 //url
 app.use('/', users);
 
-
-
+//public
+var publicDir = require('path').join(__dirname,'uploads');
+app.use('/photo_profile', express.static(publicDir));
 
 
 

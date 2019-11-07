@@ -12,6 +12,8 @@ var multer  = require('multer');
 var path    = require('path');
 var uploads = multer({dest: 'uploads'});
 
+const fs = require('fs');
+
 router.use(express.json());
 router.use(bodyParser.urlencoded({extended : false}));
 
@@ -426,34 +428,71 @@ router.post('/upload_photo', function(req, res) {
   var upload = multer({ storage: storage }).single('file');
 
   upload(req, res, function (err) {
-    let data = JSON.stringify(req.body, null, 2);
-    let user = JSON.parse(data);
-    try {
-      let input = {
-        user_id : user.user_id,
-        path_of_file : req.file.filename
-      }
-      connection.query('INSERT INTO photo_profile SET ?', input, function(error, results, fields) {
-        if(error){
-            console.log(error);
-            res.json({status : 'error'});
-        } else {
-            console.log('Success');
-            res.json({status : 'success'});
-        }
-      });
-    } catch (e) {
+    if (err instanceof multer.MulterError) {
       res.json({status : "error"})
+    } else if (err) {
+      res.json({status : "error"})
+    } else {
+      let data = JSON.stringify(req.body, null, 2);
+      let user = JSON.parse(data);
+      try {
+        let input = {
+          user_id : user.user_id,
+          path_of_file : req.file.filename
+        }
+        connection.query('INSERT INTO photo_profile SET ?', input, function(error, results, fields) {
+          if(error){
+              console.log(error);
+              res.json({status : 'error'});
+          } else {
+              console.log('Success');
+              res.json({status : 'success'});
+          }
+        });
+      } catch (e) {
+        res.json({status : "error"})
+      }
     }
-    // if (err instanceof multer.MulterError) {
-    //   res.json({status : "error"})
-    // } else if (err) {
-    //   res.json({status : "error"})
-    // } else {
-    //
-    // }
-  })
+  });
 });
+
+
+router.get('/check_photo_exist/:id', function(req, res) {
+  connection.query('SELECT * FROM photo_profile WHERE user_id = ?', [req.params.id], function(error, results, fields) {
+    if(results.length == 0) {
+      res.json({
+        status : null,
+        message : 'photo is empty',
+        photo : null
+      });
+    } else {
+      res.json({
+        status : 'success',
+        message : 'photo is exist',
+        photo : results[0].path_of_file
+      });
+    }
+  });
+});
+
+router.post('/delete_photo', function(req, res) {
+  connection.query('SELECT * FROM photo_profile WHERE user_id = ?', [req.body.id], function(error, results, fields) {
+    fs.unlink('uploads/'+results[0].path_of_file, (err) => {
+      if (err) throw err;
+      console.log('successfully deleted');
+    });
+    connection.query('DELETE FROM photo_profile where user_id = ?', [req.body.id], function(error, results, fields) {
+      res.json({
+        status : 'success',
+        message : 'photo has been deleted',
+        photo : null
+      });
+
+    });
+  });
+
+});
+
 
 // router.get('/users/:id', function(req, res) {
 //   let get = data.find(c => c.id === parseInt(req.params.id));
