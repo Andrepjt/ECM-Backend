@@ -567,11 +567,12 @@ router.post('/add_log_poin', function(req, res) {
 });
 
 
-// router.get('/users/:id', function(req, res) {
-//   let get = data.find(c => c.id === parseInt(req.params.id));
-//   if(!get) return res.status(404).send('404 Not Found!');
-//   res.json(get);
-// });
+router.get('/listing_info', function(req, res) {
+  connection.query('SELECT * FROM information ORDER BY id DESC', function(error, results, fields) {
+    res.json({ data : results });
+  });
+});
+
 
 
 module.exports = router;
