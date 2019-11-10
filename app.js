@@ -24,6 +24,13 @@ app.use('/', users);
 var publicDir = require('path').join(__dirname,'uploads');
 app.use('/photo_profile', express.static(publicDir));
 
+var publicDirNews = require('path').join(__dirname,'news_image');
+app.use('/news_image', express.static(publicDirNews));
+
+var publicDirInfos = require('path').join(__dirname,'event_image');
+app.use('/event_image', express.static(publicDirInfos));
+
+
 
 
 app.use(function(req, res, next) {
@@ -36,8 +43,6 @@ app.use(function(req, res, next) {
 
   res.type('txt').send('Not Found!');
 });
-
-
 
 
 

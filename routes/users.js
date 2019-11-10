@@ -74,10 +74,15 @@ router.post('/register', function(req, res) {
           connection.query('INSERT INTO users SET ?', input, function (error, results, fields) {
               if(error){
                   console.log(error);
-                  res.json({status : 'error'});
+                  res.json({status : 'error', alert : 'try again'});
               } else {
-                  console.log('Success');
-                  res.json({status : 'success'});
+                  let input = {
+                    user_id : results.insertId,
+                    poin_user : 10
+                  }
+                  connection.query('INSERT INTO poin SET ?', input, function (error, results, fields) {
+                    res.json({status : 'success', alert: 'success'});
+                  });
               }
           });
         }
@@ -88,6 +93,7 @@ router.post('/register', function(req, res) {
     res.status(404);
   }
 });
+
 
 router.post('/login', function(req, res) {
   let user = {
@@ -568,8 +574,70 @@ router.post('/add_log_poin', function(req, res) {
 
 
 router.get('/listing_info', function(req, res) {
-  connection.query('SELECT * FROM information ORDER BY id DESC', function(error, results, fields) {
+  connection.query('SELECT * FROM information ORDER BY id DESC limit 5', function(error, results, fields) {
     res.json({ data : results });
+  });
+});
+
+router.get('/listing_event', function(req, res) {
+  connection.query('SELECT * FROM event ORDER BY id DESC limit 1', function(error, results, fields) {
+    res.json({ data : results });
+  });
+});
+
+router.get('/listing_event_all', function(req, res) {
+  connection.query('SELECT * FROM event ORDER BY id DESC', function(error, results, fields) {
+    res.json({ data : results });
+  });
+});
+
+router.get('/favorite_info/:id', function(req, res) {
+  connection.query('SELECT * FROM `favorite` LEFT JOIN `information` ON favorite.id_favorite = information.id where favorite.category_id = 1 AND favorite.user_id = ?', [req.params.id] ,function(error, results, fields) {
+    res.json({ data : results });
+  });
+});
+
+router.get('/favorite_event/:id', function(req, res) {
+  connection.query('SELECT * FROM `favorite` LEFT JOIN `event` ON favorite.id_favorite = event.id where favorite.category_id = 2 AND favorite.user_id = ?', [req.params.id] ,function(error, results, fields) {
+    res.json({ data : results });
+  });
+});
+
+router.post('/checking_favorite', function(req, res) {
+  connection.query('SELECT * FROM `favorite` WHERE id_favorite = ? and category_id = ? and user_id = ?', [req.body.id_favorite, req.body.category_id, req.body.user_id], function(error, results, fields){
+    if(results.length > 0) {
+      res.json({ status : 'success' });
+    } else {
+      res.json({ status : 'error' });
+    }
+  });
+})
+
+router.post('/post_info', function(req, res) {
+  let input = {
+    id_favorite : req.body.id_favorite,
+    category_id : 1,
+    user_id : req.body.user_id
+  }
+  connection.query('INSERT INTO favorite SET ?', input, function(error, results, fields) {
+    res.json({ status: "success", message : "berhasil ditambahkan"});
+  });
+});
+
+router.post('/post_event', function(req, res) {
+  let input = {
+    id_favorite : req.body.id_favorite,
+    category_id : 2,
+    user_id : req.body.user_id
+  }
+  connection.query('INSERT INTO favorite SET ?', input, function(error, results, fields) {
+    res.json({ status: "success", message : "berhasil ditambahkan"});
+  });
+});
+
+router.post('/delete_favorite', function(req, res) {
+  connection.query('DELETE FROM favorite WHERE id_favorite = ? AND category_id = ? AND user_id = ?', [req.body.id_favorite, req.body.category_id, req.body.user_id], function(error, results, fields) {
+    res.json({ status : 'success' });
   });
 });
 
