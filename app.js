@@ -30,6 +30,9 @@ app.use('/news_image', express.static(publicDirNews));
 var publicDirInfos = require('path').join(__dirname,'event_image');
 app.use('/event_image', express.static(publicDirInfos));
 
+var publicDirTimeline = require('path').join(__dirname,'timeline_image');
+app.use('/timeline_image', express.static(publicDirTimeline));
+
 
 
 
